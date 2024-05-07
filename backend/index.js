@@ -7,8 +7,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Configure AWS SDK to use IAM role
-AWS.config.update({ region: '<your-region>' });
+// Configure AWS SDK with your AWS credentials and specify the region
+AWS.config.update({
+    accessKeyId: '<AKIA6ODU7WGBM7GBLAFZ>',
+    secretAccessKey: '<LwcO8+J52UboTjhS1TQegk7RN0bUG1cpuYnwcQYD>',
+    region: 'us-east-1' // Specify the correct region here
+});
 
 // Create DynamoDB DocumentClient
 const docClient = new AWS.DynamoDB.DocumentClient();
