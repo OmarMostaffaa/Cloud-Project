@@ -1,43 +1,25 @@
-import React, { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './Navbar.css';
-import AddCarModal from '../Cars/AddCarModal'; // Import the AddCarModal component
+import React from 'react';
+import Navbar from '../Navbar/Navbar'; // Import Navbar component
 
-function Navbar() {
-    const [showModal, setShowModal] = useState(false);
-
-    const openModal = () => {
-        setShowModal(true);
-    }
-
-    const closeModal = () => {
-        setShowModal(false);
-    }
-
+function Home() {
     return (
-        <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div className="container">
-                <a className="navbar-brand" href="#">Car Dealership</a>
-                <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span className="navbar-toggler-icon"></span>
-                </button>
-                <div className="collapse navbar-collapse" id="navbarNav">
-                    <ul className="navbar-nav ml-auto">
-                        <li className="nav-item active">
-                            <a className="nav-link" href="/">Home</a>
-                        </li>
-                        <li className="nav-item">
-                            <a className="nav-link" href="/Cars">Cars</a>
-                        </li>
-                        <li className="nav-item">
-                            <button className="nav-link btn btn-primary" onClick={openModal}>Add Car</button>
-                        </li>
-                    </ul>
+        <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "15vh", paddingLeft: "35vw", paddingRight: "10vw" }}>
+            <section className="intro-section text-center">
+                <div className="container">
+                    <div className="row justify-content-center">
+                        <div className="col-md-6">
+                            <h1>Welcome to Our Car Dealership</h1>
+                            <p>Discover a world of automotive excellence at our dealership. From sleek sedans to rugged SUVs, we offer a diverse selection of high-quality vehicles to suit every lifestyle and budget. Our knowledgeable team is dedicated to providing exceptional service, guiding you through every step of your car-buying journey with expertise and care. Visit us today and let us help you find the perfect vehicle to embark on your next adventure.</p>
+                        </div>
+                        <div className="col-md-6">
+                            {/* You can add an image or carousel here */}
+                        </div>
+                    </div>
                 </div>
-            </div>
-            {showModal && <AddCarModal closeModal={closeModal} />} {/* Render the modal here */}
-        </nav>
+            </section>
+            {/* Add other sections/components here */}
+        </div>
     );
 }
 
-export default Navbar;
+export default Home;

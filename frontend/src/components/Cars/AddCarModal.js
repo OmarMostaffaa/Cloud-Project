@@ -6,32 +6,22 @@ function AddCarModal({ closeModal }) {
         brand: '',
         model: '',
         color: '',
-        price: '',
-        image: null // Store the selected image file
+        price: ''
     });
 
     const handleChange = (e) => {
-        if (e.target.name === 'image') {
-            // Handle image upload separately
-            setFormData({ ...formData, [e.target.name]: e.target.files[0] });
-        } else {
-            setFormData({ ...formData, [e.target.name]: e.target.value });
-        }
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const formDataWithoutImage = { ...formData };
-            delete formDataWithoutImage.image; // Remove image from form data to prevent serialization issues
-
-            // Example: Send form data to backend API (replace with your actual API endpoint)
-            const response = await fetch('http://localhost:4000/api/addCar', {
+            const response = await fetch('http://localhost:4000/api/cars/addCar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formDataWithoutImage),
+                body: JSON.stringify(formData),
             });
             if (response.ok) {
                 closeModal();
@@ -73,8 +63,6 @@ function AddCarModal({ closeModal }) {
                             <input type="text" name="model" value={formData.model} onChange={handleChange} className="form-control mb-3" placeholder="Model" />
                             <input type="text" name="color" value={formData.color} onChange={handleChange} className="form-control mb-3" placeholder="Color" />
                             <input type="number" name="price" value={formData.price} onChange={handleChange} className="form-control mb-3" placeholder="Price" />
-                            {/* Add input for image upload */}
-                            <input type="file" name="image" onChange={handleChange} className="form-control mb-3" accept="image/*" />
                             <button type="submit" className="btn btn-primary">Add Car</button>
                         </form>
                     </div>
