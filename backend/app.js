@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const AWS = require('aws-sdk');
-const carRoutes = require('./routers/carRoutes');
+const carRoutes = require('./router/carRouter');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());

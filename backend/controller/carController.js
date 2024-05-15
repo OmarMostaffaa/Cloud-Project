@@ -1,5 +1,8 @@
 //carController.js 
-// Configure the DynamoDB client with the correct region
+const { DynamoDBClient, PutItemCommand, UpdateItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
+const AWS = require('aws-sdk');
+const credentials = require('../app').credentials;
+
 const client = new DynamoDBClient({
     region: 'us-east-1',
     credentials: credentials
