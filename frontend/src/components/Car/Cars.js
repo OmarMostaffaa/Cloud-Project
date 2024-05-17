@@ -7,24 +7,72 @@ function Cars() {
 
     const fetchCarsFromBackend = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/cars/getCars');
+            const response = await fetch('http://18.188.84.222:4000/api/cars/getCars');
             if (!response.ok) {
                 throw new Error('Failed to fetch cars');
             }
             const data = await response.json();
+            const timestamp = new Date().getTime();
             const carsWithImageUrls = data.map(car => ({
                 ...car,
-                imageUrl: `http://${bucketName}.s3.amazonaws.com/${car.id}`
+                imageUrl: `http://giucars.s3.amazonaws.com/${car.id}?t=${timestamp}`
             }));
             setCars(carsWithImageUrls);
         } catch (error) {
             console.error('Error fetching cars:', error.message);
         }
-    };
+    };    
 
     useEffect(() => {
         fetchCarsFromBackend();
     }, []);
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+
+        const updatedValues = {};
+        formData.forEach((value, key) => {
+            updatedValues[key] = value || null;
+        });
+
+        if (formData.get('base64Image')) {
+            const reader = new FileReader();
+            reader.readAsDataURL(formData.get('base64Image'));
+            reader.onload = async () => {
+                const base64Image = reader.result.split(',')[1];
+                updatedValues.base64Image = base64Image;
+
+                handleUpdate(carToUpdate.id, updatedValues);
+            };
+            reader.onerror = (error) => {
+                console.error('Error reading file:', error);
+            };
+        } else {
+            handleUpdate(carToUpdate.id, updatedValues);
+        }
+    };
+
+    const handleUpdate = async (carId, updatedValues) => {
+        try {
+            const response = await fetch('http://18.188.84.222:4000/api/cars/updateCar', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: carId, ...updatedValues }),
+            });
+
+            if (response.ok) {
+                fetchCarsFromBackend();
+                setCarToUpdate(null);
+            } else {
+                console.error('Error updating car:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error updating car:', error.message);
+        }
+    };
 
     const handleUpdateClick = (car) => {
         setCarToUpdate(car);
@@ -32,7 +80,7 @@ function Cars() {
 
     const handleDelete = async (carId) => {
         try {
-            const response = await fetch(`http://localhost:4000/api/cars/deleteCar/${carId}`, {
+            const response = await fetch(`http://18.188.84.222:4000/api/cars/deleteCar/${carId}`, {
                 method: 'DELETE',
             });
 
@@ -68,10 +116,6 @@ function Cars() {
                                         <div className="mb-3">
                                             <label htmlFor="color" className="form-label">Color:</label>
                                             <input type="text" id="color" name="color" className="form-control" defaultValue={carToUpdate.color} />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label htmlFor="price" className="form-label">Price:</label>
-                                            <input type="text" id="price" name="price" className="form-control" defaultValue={carToUpdate.price} />
                                         </div>
                                         <div className="mb-3">
                                             <label htmlFor="base64Image" className="form-label">Image:</label>

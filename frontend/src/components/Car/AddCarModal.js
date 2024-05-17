@@ -25,7 +25,7 @@ function AddCarModal({ closeModal }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:4000/api/cars/addCar', {
+            const response = await fetch('http://18.188.84.222:4000/api/cars/addCar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
