@@ -1,13 +1,33 @@
 import React, { useState, useEffect } from 'react';
 
+function SuccessPopup({ message, onClose }) {
+    return (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={onClose}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h5 className="modal-title">Success</h5>
+                        <button type="button" className="btn-close" onClick={onClose}></button>
+                    </div>
+                    <div className="modal-body">
+                        <p>{message}</p>
+                        <button type="button" className="btn btn-primary" onClick={onClose}>Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function AddCarModal({ closeModal }) {
     const [formData, setFormData] = useState({
         id: '',
         brand: '',
         model: '',
         color: '',
-        base64Image: null // New state for storing the base64 encoded image
+        base64Image: null
     });
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const handleChange = (e) => {
         if (e.target.name === 'base64Image') {
@@ -34,8 +54,7 @@ function AddCarModal({ closeModal }) {
             });
 
             if (response.ok) {
-                closeModal();
-                // Optionally, you can add logic to refresh car data here
+                setShowSuccessPopup(true);
             } else {
                 console.error('Error adding car:', response.statusText);
             }
@@ -58,6 +77,12 @@ function AddCarModal({ closeModal }) {
         };
     }, [closeModal]);
 
+    const handlePopupClose = () => {
+        setShowSuccessPopup(false);
+        closeModal();
+        window.location.reload();
+    };
+
     return (
         <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={closeModal}>
             <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
@@ -68,16 +93,17 @@ function AddCarModal({ closeModal }) {
                     </div>
                     <div className="modal-body">
                         <form onSubmit={handleSubmit}>
-                            <input type="text" name="id" value={formData.id} onChange={handleChange} className="form-control mb-3" placeholder="ID" />
-                            <input type="text" name="brand" value={formData.brand} onChange={handleChange} className="form-control mb-3" placeholder="Brand" />
-                            <input type="text" name="model" value={formData.model} onChange={handleChange} className="form-control mb-3" placeholder="Model" />
-                            <input type="text" name="color" value={formData.color} onChange={handleChange} className="form-control mb-3" placeholder="Color" />
-                            <input type="file" accept="image/jpeg" name="base64Image" onChange={handleChange} className="form-control mb-3" /> {/* File input for uploading image */}
+                            <input type="text" name="id" value={formData.id} onChange={handleChange} className="form-control mb-3" placeholder="ID" required />
+                            <input type="text" name="brand" value={formData.brand} onChange={handleChange} className="form-control mb-3" placeholder="Brand" required />
+                            <input type="text" name="model" value={formData.model} onChange={handleChange} className="form-control mb-3" placeholder="Model" required />
+                            <input type="text" name="color" value={formData.color} onChange={handleChange} className="form-control mb-3" placeholder="Color" required />
+                            <input type="file" accept="image/jpeg" name="base64Image" onChange={handleChange} className="form-control mb-3" required />
                             <button type="submit" className="btn btn-primary">Add Car</button>
                         </form>
                     </div>
                 </div>
             </div>
+            {showSuccessPopup && <SuccessPopup message="Car added successfully!" onClose={handlePopupClose} />}
         </div>
     );
 }

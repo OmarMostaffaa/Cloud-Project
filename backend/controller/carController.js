@@ -1,5 +1,5 @@
 const { DynamoDBClient, PutItemCommand, UpdateItemCommand, DeleteItemCommand, GetItemCommand, ScanCommand } = require('@aws-sdk/client-dynamodb');
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectVersionsCommand } = require('@aws-sdk/client-s3');
 const { v4: uuidv4 } = require('uuid');
 const credentials = require('../app').credentials;
 
@@ -14,6 +14,17 @@ const carController = {
         if (!base64Image) {
             return res.status(400).json({ error: 'base64Image is required' });
         }
+        const checkParams = {
+            TableName: 'cars2',
+            Key: {
+                'id': { S: id }
+            }
+        };
+    
+        // const checkData = await client.send(new GetItemCommand(checkParams));
+        // if (checkData.Item) {
+        //     return res.status(400).json({ error: 'Car with this ID already exists' });
+        // }
 
         const imageBuffer = Buffer.from(base64Image.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
@@ -47,7 +58,6 @@ const carController = {
             return res.status(500).json({ error: 'Could not add car' });
         }
     },
-
     updateCar: async (req, res) => {
         const { id, brand, model, color, base64Image } = req.body;
     
@@ -112,24 +122,85 @@ const carController = {
             return res.status(500).json({ error: 'Could not update car' });
         }
     },
-    
-    deleteCar: async (req, res) => {
-        const { id } = req.body;
-        const params = {
-            TableName: 'cars2',
-            Key: { 'id': { S: id } }
-        };
 
+    deleteCar: async (req, res) => {
+        const { id } = req.params;
+    
         try {
-            await client.send(new DeleteItemCommand(params));
-            res.json({ message: 'Car deleted successfully' });
+            // Define S3 parameters for both buckets
+            const s3Buckets = ['giucars', 'resizedgiucars'];
+            let allVersionsDeleted = true;
+    
+            for (const bucket of s3Buckets) {
+                const listParams = {
+                    Bucket: bucket,
+                    Prefix: id
+                };
+    
+                // List object versions
+                const versionsResponse = await s3Client.send(new ListObjectVersionsCommand(listParams));
+                const versions = versionsResponse.Versions || [];
+    
+                if (versions.length > 0) {
+                    // Get the latest version
+                    const latestVersion = versions[0];
+                    const deleteParams = {
+                        Bucket: bucket,
+                        Key: id,
+                        VersionId: latestVersion.VersionId
+                    };
+    
+                    // Delete the latest version
+                    await s3Client.send(new DeleteObjectCommand(deleteParams));
+    
+                    // Check if there are more versions left
+                    const remainingVersionsResponse = await s3Client.send(new ListObjectVersionsCommand(listParams));
+                    const remainingVersions = remainingVersionsResponse.Versions || [];
+    
+                    if (remainingVersions.length >= 0) {
+                        allVersionsDeleted = false;
+                    }
+                }
+            }
+    
+            // Delete the car record from DynamoDB only if all versions were deleted
+            if (allVersionsDeleted) {
+                const params = {
+                    TableName: 'cars2',
+                    Key: { 'id': { S: id } }
+                };
+    
+                // Delete the car record from DynamoDB
+                await client.send(new DeleteItemCommand(params));
+            }
+    
+            res.json({ message: 'Car processed successfully' });
         } catch (error) {
             console.error('Error deleting item:', error);
-            res.status(500).json({ error: 'Could not delete car' });
+            res.status(500).json({ error: 'Could not process car' });
         }
     },
-
-    getCars: async (req, res) => {
+    // getCars: async (req, res) => {
+    //     const params = {
+    //         TableName: 'cars2'
+    //     };
+    //     try {
+    //         const data = await client.send(new ScanCommand(params));
+    //         const cars = data.Items.map(item => {
+    //             return {
+    //                 id: item.id.S,
+    //                 brand: item.brand.S,
+    //                 model: item.model.S,
+    //                 color: item.color.S
+    //             };
+    //         });
+    //         res.json(cars);
+    //     } catch (error) {
+    //         console.error('Error fetching cars:', error);
+    //         res.status(500).json({ error: 'Could not fetch cars' });
+    //     }
+    // },
+    getCars : async (req, res) => {
         const params = {
             TableName: 'cars2'
         };
@@ -150,53 +221,51 @@ const carController = {
             res.status(500).json({ error: 'Could not fetch cars' });
         }
     },
-
-    getCarById: async (req, res) => {
-        const id = req.params.id; 
-        const params = {
-            TableName: 'cars2', 
-            Key: {
-                'id': { S: id } 
-            }
-        };
-        try {
-            const data = await client.send(new GetItemCommand(params));
-            if (!data.Item) {
-                return res.status(404).json({ error: 'Car not found' });
-            }
-
-            const car = {
-                id: data.Item.id.S,
-                brand: data.Item.brand.S,
-                model: data.Item.model.S,
-                color: data.Item.color.S,
-                imageUrl: `http://${bucketName}.s3.amazonaws.com/${data.Item.id.S}`
-            };
-            console.log(car.id);
-            console.log(car.brand);
-            console.log(car.imageUrl);
-
-            res.status(200).json(car);
-        } catch (error) {
-            console.error('Error fetching car from DynamoDB:', error);
-            res.status(500).json({ error: 'Could not fetch car from DynamoDB' });
+    getCarById: async(req,res)=>{
+    const id = req.params.id; 
+    const params = {
+        TableName: 'cars2', 
+        Key: {
+            'id': { S: id } 
         }
-    },
+    };
+    try {
+        const data = await client.send(new GetItemCommand(params));
+        if (!data.Item) {
+            return res.status(404).json({ error: 'Car not found' });
+        }
 
-    getImageById: async (req, res) => {
+        const car = {
+            id: data.Item.id.S,
+            brand: data.Item.brand.S,
+            model: data.Item.model.S,
+            color: data.Item.color.S,
+            imageUrl: `http://${bucketName}.s3.amazonaws.com/${data.Item.id.S}`
+        };
+        console.log(car.id);
+        console.log(car.brand);
+        console.log(car.imageUrl);
+
+        res.status(200).json(car);
+    } catch (error) {
+        console.error('Error fetching car from DynamoDB:', error);
+        res.status(500).json({ error: 'Could not fetch car from DynamoDB' });
+    }
+},
+  getImageById : async (req, res) => {
         const key = req.params.id; // Ensure the parameter name matches your route definition
         const params = {
             Bucket: bucketName,
             Key: key
         };
-
+    
         try {
             const data = await s3Client.send(new GetObjectCommand(params));
-
+    
             if (!data.Body) {
                 return res.status(404).json({ error: 'Image not found' });
             }
-
+    
             // Collect the image data
             let chunks = [];
             data.Body.on('data', chunk => chunks.push(chunk));
@@ -210,22 +279,7 @@ const carController = {
             res.status(500).json({ error: 'Could not fetch image from S3' });
         }
     },
+   
 };
-
-async function uploadImage(buffer, key, bucket) {
-    const uploadParams = {
-        Bucket: bucket,
-        Key: key,
-        Body: buffer,
-        ContentType: 'image/jpeg' // Adjust the content type as needed
-    };
-    try {
-        await s3Client.send(new PutObjectCommand(uploadParams));
-        return `https://${bucket}.s3.amazonaws.com/${key}`;
-    } catch (err) {
-        console.error('Error uploading image to S3:', err);
-        throw err;
-    }
-}
 
 module.exports = carController;
